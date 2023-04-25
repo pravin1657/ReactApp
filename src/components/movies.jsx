@@ -7,12 +7,14 @@ import { getGenres } from "../Services/fakeGenreService";
 import MoviesTable from "./moviesTable";
 import _ from "lodash";
 import { Link } from "react-router-dom";
+import SearchBox from "./searchBox";
 class Movies extends Component {
   state = {
     movies: [],
     genres: [],
     pageSize: 4,
     currentPage: 1,
+    searchQuery:"",
     selectedGenre: "",
     sortColumn: { path: "title", order: "asc" },
   };
@@ -38,8 +40,11 @@ class Movies extends Component {
     this.setState({ currentPage: page });
   };
   handleGenreSelect = (genre) => {
-    this.setState({ selectedGenre: genre, currentPage: 1 });
+    this.setState({ selectedGenre: genre,searchQuery:"", currentPage: 1 });
   };
+  handleSearch=query=>{
+    this.setState({searchQuery:query, selectedGenre: "", currentPage: 1})
+  }
   handleSort = (sortColumn) => {
     this.setState({ sortColumn });
   };
@@ -51,11 +56,14 @@ class Movies extends Component {
       sortColumn,
       movies: allMovies,
       selectedGenre,
+      searchQuery
     } = this.state;
-    const filtered =
-    selectedGenre && selectedGenre._id
-      ? allMovies.filter((m) => m.genre._id === selectedGenre._id)
-      : allMovies;
+    let filtered = allMovies
+    if(searchQuery)
+    filtered=allMovies.filter(m=> m.title.toLowerCase().startsWith(searchQuery.toLowerCase()))
+    else if(selectedGenre && selectedGenre._id)
+    filtered= allMovies.filter((m) => m.genre._id === selectedGenre._id)
+      
   const sorted = _.orderBy(filtered, [sortColumn.path], [sortColumn.order]);
   const movies = paginate(sorted, currentPage, pageSize);
   return {totalCount: filtered.length, data:movies}
@@ -68,6 +76,7 @@ class Movies extends Component {
       currentPage,
       sortColumn,
       selectedGenre,
+      searchQuery
     } = this.state;
    const {totalCount, data:movies}=this.getPagedData()
     if (count === 0)
@@ -86,6 +95,7 @@ class Movies extends Component {
             <Link to="/movies/new" className="btn btn-primary" style={{margin:20}}
             > New Movie </Link>
             <div>{totalCount} movies found</div>
+            <SearchBox value={searchQuery} onChange={this.handleSearch} />
             <MoviesTable
               movies={movies}
               sortColumn={sortColumn}
